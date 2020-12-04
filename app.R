@@ -1,42 +1,39 @@
 # Vineyard Sampling app for Minh's Summer Research Scholarship Project
 
 library(shiny)
+library(shinydashboard)
+library(readxl)
+Coombe_map <- read_excel("Coombe_map.xlsx")
 
-# Define UI for application that draws a histogram
-ui <- fluidPage(
-
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
-
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot")
+ui <- dashboardPage(
+    dashboardHeader(title = "Basic dashboard"),
+    dashboardSidebar(),
+    dashboardBody(
+        # Boxes need to be put in a row (or column)
+        fluidRow(
+            box(plotOutput("plot1", height = 250)),
+            
+            box(
+                title = "Controls",
+                sliderInput(inputId = "slider", label = "Number of samples:", 
+                            min = 1, max = max(Coombe_map$Vine_ID), value = 30)
+            )
         )
     )
 )
 
-# Define server logic required to draw a histogram
 server <- function(input, output) {
-
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white')
+    set.seed(122)
+    histdata <- rnorm(500)
+    
+    
+    
+    output$plot1 <- renderPlot({
+        print(sample(Coombe_map$Vine_ID, size = input$slider))
+        
+        data <- histdata[seq_len(input$slider)]
+        hist(data)
     })
 }
 
-# Run the application abac
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)
