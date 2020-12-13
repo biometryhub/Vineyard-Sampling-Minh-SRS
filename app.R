@@ -30,10 +30,27 @@ ui <- dashboardPage(
                 selectInput("select", label = h3("Type of Sampling"), 
                             choices = list("Cluster Sampling" = 1, "Stratified Sampling" = 2, "Simple Random Sampling" = 3), 
                             selected = 1),
-                uiOutput('slider')
+                conditionalPanel(
+                    condition = "input.select == 1",
+                    selectInput(
+                        "clustervariable", "Cluster Variable",
+                        c("Rootstock", "Row", "Panel", "Column")
+                    ),
+                    sliderInput(
+                        "clusternumber", "Number of Clusters", min = 1, max = 50, value = 10
+                    )
+                ),
+                # Only show this panel if stratified is selected
+                conditionalPanel(
+                    condition = "input.select == 2",
+                    sliderInput("breakCount", "Break Count", min = 1, max = 50, value = 10)
+                ),
+                sliderInput(inputId = "samplenumber", label = "Number of samples:", 
+                            min = 1, max = nrow(Coombe_map), value = 30)
                 
             ),
-            box(plotOutput('Vineyard_map'))
+            box(plotOutput('Vineyard_map'))#,
+            # box( uiOutput('clustervariable'))
             
         )
     )
@@ -42,12 +59,16 @@ ui <- dashboardPage(
 server <- function(input, output) {
     #Simple Random Sampling
     
-    output$slider <- renderUI (switch (input$select, '3'= {sliderInput(inputId = "samplenumber", label = "Number of samples:", 
-                                                                       min = 1, max = max(Coombe_map$Vine_ID), value = 30)},
-                                       NULL
-    )
-    )
+    # output$slider <- renderUI (switch (input$select, '3'= {sliderInput(inputId = "samplenumber", label = "Number of samples:", 
+    #                                                                    min = 1, max = max(Coombe_map$Vine_ID), value = 30)},
+    #                                    NULL
+    # )
+    # )
     ####histogram plot
+    # output$clustervariable <- renderUI (switch (input$select, '1' = {selectInput(inputId = "clustervariable1", label = h3("Select box"),
+    #                                                                              choices = list("Rootstock" = 1, "Row" = 2, "Panel" = 3, "Column" = 4),
+    #                                                                              selected = 1) })
+    # )
     set.seed(122)
     histdata <- rnorm(500)
     #Select type of sampling
