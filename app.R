@@ -5,13 +5,14 @@ library(shinydashboard)
 library(readxl)
 library(sampling)
 library(ggplot2)
+
 Coombe_map <- read_excel("Coombe_map.xlsx")
 
 ui <- dashboardPage(
     dashboardHeader(title = "Vineyard Sampling"),
     sidebar <- dashboardSidebar(
         sidebarMenu(
-            menuItem("Home", tabName = "Home", icon("home", lib ="glyphicon")),
+            menuItem("Home", tabName = "Home"),
             menuItem("Sampling Plan", tabName = "Sampling plan"),
             menuItem("Data entry", tabName = "Data entry"),
             menuItem("Plots", tabName = "Plots/ Analysis"),
@@ -73,15 +74,33 @@ server <- function(input, output) {
     histdata <- rnorm(500)
     #Select type of sampling
     output$value <- renderPrint({ input$select })
-    
+    #Simple Random Sampling
     output$plot1 <- renderPlot({
         print(sample(Coombe_map$Vine_ID, size = input$samplenumber))
-        
+       
+        #data(Coombe_map)
+        Tot= Coombe_map$Vine_ID
+        name= Coombe_map$Vine_ID
+        n=input$samplenumber
+        s=srswor(n, length(Tot))
+        simplerandom <- as.vector(name[s==1])
+        print(simplerandom)
+        sample_df <- data.frame(Coombe_map$Vine_ID, s)
+        print(sample_df)
+        #simplerandom <- srswor(input$samplenumber, N = 352)
+        #print(simplerandom)
+    #Cluster Sampling
+   
+    #Histogram     
         data <- histdata[seq_len(input$samplenumber)]
         hist(data)
     })
     
-    output$Vineyard_map <- renderPlot({ggplot(Coombe_map, aes(x= Row, y = Column, color = Rootstock)) + geom_point()
+    #Vineyard Map
+    output$Vineyard_map <- renderPlot({
+        # Add code for generating sample here
+        
+        ggplot(Coombe_map, aes(x= Row, y = Column, color = Rootstock)) + geom_point()
     })
 }
 
