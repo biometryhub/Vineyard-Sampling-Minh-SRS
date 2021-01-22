@@ -5,6 +5,7 @@ library(shinydashboard)
 library(readxl)
 library(sampling)
 library(ggplot2)
+library(Cairo)
 
 options(shiny.usecairo=T)
 
@@ -29,6 +30,7 @@ ui <- dashboardPage(
             box(plotOutput("Vineyard_map", height = 500),
                 # Minh compelte
                 # Add download button here for plot
+                downloadButton('downloadMap', 'Download Map')
             ),
             
             box(
@@ -82,9 +84,9 @@ ui <- dashboardPage(
         ),
         
         fluidRow(
-            box(width = 12
+            box(width = 12,
                 # Add table here to display samples chosen
-                
+                DT::dataTableOutput("plan")
             )
         )
     )
@@ -170,8 +172,6 @@ server <- function(input, output, session) {
             }
             else if(input$select == 2) {
                 
-                #a <- table(Coombe_map$Rootstock)
-                
                 if(input$stratanames == "Panel") {
                     col <- "PanelCluster"
                 }
@@ -208,13 +208,29 @@ server <- function(input, output, session) {
             ggtitle("Map of Coombe Vineyard") + labs(color = 'Rootstock') + 
             geom_point(aes(shape = as.factor(sample), alpha = sample, size = 3*sample), colour = "grey30") + 
             scale_shape_manual(values=c(16, 15)) + guides(size = FALSE, alpha = FALSE, shape = FALSE) + 
-            theme_bw() + theme(legend.position = "top")
+            theme_bw() + theme(plot.title = element_text(size = 16,hjust = 0.5),legend.position = "top")
     })
     
     output$Vineyard_map <- renderPlot({
         print(plotOutput())
     })
     
+    #Set up Sampling table
+    output$plan <- DT::renderDataTable({
+        
+        DT::datatable(coombe(), rownames = F, extensions = "Responsive", plugins = 'natural',
+                                        options = list(lengthMenu = list(c(3, 10, -1), c('3', '10', 'All')),
+                                                       pageLength = 3, scrollX = TRUE))
+        # return(data_table)
+    })
+    
+    
+    output$downloadMap <- downloadHandler(
+        filename = function() { "sampling_plan.png" },
+        content = function(file) {
+            ggsave(file,plotOutput())
+        }
+    )
     # Minh complete
     # Add downloadHandler functions here
     # Try and copy the example I sent from Stack Overflow
