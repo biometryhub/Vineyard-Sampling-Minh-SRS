@@ -26,7 +26,10 @@ ui <- dashboardPage(
         # Boxes need to be put in a row (or column)
         fluidRow(
             
-            box(plotOutput("Vineyard_map", height = 500)),
+            box(plotOutput("Vineyard_map", height = 500),
+                # Minh compelte
+                # Add download button here for plot
+            ),
             
             box(
                 title = "Sampling plan",
@@ -52,7 +55,7 @@ ui <- dashboardPage(
                 # Only show this panel if stratified is selected
                 conditionalPanel(
                     condition = "input.select == 2",
-                    # Minh complete
+                    
                     selectInput(
                         "stratanames", "Stratified on Rootstock based on:",
                         c("Row", "Panel", "Rootstock")
@@ -72,18 +75,17 @@ ui <- dashboardPage(
                                 min = 1, max = nrow(Coombe_map), value = 30)
                 ),
                 
-                # Minh complete
-                # Add a checkbox here to say "Sample with replacement?"
+                checkboxInput("replacement", "Sample with replacement?", FALSE),
+                actionButton("submit", label = "Generate Plan") 
                 
-                checkboxInput("replacement", "Sample with replacement", FALSE),
-                actionButton("submit", label = "Submit") 
+            )
+        ),
+        
+        fluidRow(
+            box(width = 12
+                # Add table here to display samples chosen
                 
-                
-                
-            ),
-            #box(plotOutput('Vineyard_map'))#,
-            # box( uiOutput('clustervariable'))
-            
+            )
         )
     )
 )
@@ -110,8 +112,8 @@ server <- function(input, output, session) {
     #Vineyard Map
     # Set up the data frame using an eventReactive() or possibly observeEvent()
     observe({
-        print(input$select)
-        #  Minh complete
+        
+        
         if(input$clustervariable == 'Row') {
             # Row cluster
             updateSliderInput(session, "clusternumber", max = 11)
@@ -129,7 +131,7 @@ server <- function(input, output, session) {
     
     #For stratified sampling
     observe({
-        #  Minh complete
+        
         if(input$stratanames == 'Row') {
             # Row stratified
             #updateSliderInput(session, "stratanumber", max = 11)
@@ -181,7 +183,7 @@ server <- function(input, output, session) {
                 # Minh to update size to be based on slider
                 sample <- strata(Coombe_map, col, 
                                  size=rep(input$stratasamplenumber, nrow(unique(Coombe_map[,col]))), 
-                                          method=ifelse(test = input$replacement, "srswr", "srswor"))
+                                 method=ifelse(test = input$replacement, "srswr", "srswor"))
                 print(sample)
                 Coombe_map$sample <- 0
                 Coombe_map$sample[sample$ID_unit] <- 1
@@ -201,15 +203,22 @@ server <- function(input, output, session) {
         }
     )
     
-    output$Vineyard_map <- renderPlot({
-        ggplot(coombe(), aes(x= Row, y = Column, color = Rootstock)) + geom_point(size = 3)  + 
+    plotOutput <- reactive({
+        p <- ggplot(coombe(), aes(x= Row, y = Column, color = Rootstock)) + geom_point(size = 3)  + 
             ggtitle("Map of Coombe Vineyard") + labs(color = 'Rootstock') + 
             geom_point(aes(shape = as.factor(sample), alpha = sample, size = 3*sample), colour = "grey30") + 
             scale_shape_manual(values=c(16, 15)) + guides(size = FALSE, alpha = FALSE, shape = FALSE) + 
             theme_bw() + theme(legend.position = "top")
     })
     
+    output$Vineyard_map <- renderPlot({
+        print(plotOutput())
+    })
     
+    # Minh complete
+    # Add downloadHandler functions here
+    # Try and copy the example I sent from Stack Overflow
+    # https://stackoverflow.com/questions/14810409/save-plots-made-in-a-shiny-app
     
     
 }
