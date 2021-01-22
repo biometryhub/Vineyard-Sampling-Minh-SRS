@@ -40,7 +40,7 @@ ui <- dashboardPage(
                         c("Row", "Panel", "Rootstock")
                     ),
                     
-                        
+                    
                     sliderInput(
                         "clusternumber", "Number of Clusters", min = 1, max = 11, value = 3
                     )
@@ -53,30 +53,30 @@ ui <- dashboardPage(
                     # Minh complete
                     selectInput(
                         "stratanames", "Stratified on Rootstock based on:",
-                        c("Row", "Panel")
-                     ),
-                     sliderInput(
-                         "stratanumber", "Number of Stratum", min = 1, max = 11, value = 3
-                    )
+                        c("Row", "Panel", "Rootstock")
+                    ),
                     # sliderInput(
-                    #     "clusternumber", "Number of Clusters", min = 1, max = 11, value = 3
-                    # )
+                    #     "stratanumber", "Number of Strata", min = 1, max = 11, value = 3
+                    # ),
+                    sliderInput(
+                        "stratasamplenumber", "Number of Samples within a Strata", min = 1, max = 11, value = 3
+                    )
                 ),
                 
                 # Show this for SRS
                 conditionalPanel(
                     condition = "input.select == 3",
-                sliderInput(inputId = "samplenumber", label = "Number of samples:", 
-                            min = 1, max = nrow(Coombe_map), value = 30)
+                    sliderInput(inputId = "samplenumber", label = "Number of samples:", 
+                                min = 1, max = nrow(Coombe_map), value = 30)
                 ),
                 
                 # Minh complete
                 # Add a checkbox here to say "Sample with replacement?"
-
+                
                 checkboxInput("replacement", "Sample with replacement", FALSE),
                 actionButton("submit", label = "Submit") 
                 
-        
+                
                 
             ),
             #box(plotOutput('Vineyard_map'))#,
@@ -88,6 +88,7 @@ ui <- dashboardPage(
 
 server <- function(input, output, session) {
     #Simple Random Sampling
+    
     
     # output$slider <- renderUI (switch (input$select, '3'= {sliderInput(inputId = "samplenumber", label = "Number of samples:", 
     #                                                                    min = 1, max = max(Coombe_map$Vine_ID), value = 30)},
@@ -103,10 +104,11 @@ server <- function(input, output, session) {
     histdata <- rnorm(500)
     #Select type of sampling
     output$value <- renderPrint({ input$select })
-
+    
     #Vineyard Map
     # Set up the data frame using an eventReactive() or possibly observeEvent()
     observe({
+        print(input$select)
         #  Minh complete
         if(input$clustervariable == 'Row') {
             # Row cluster
@@ -128,13 +130,22 @@ server <- function(input, output, session) {
         #  Minh complete
         if(input$stratanames == 'Row') {
             # Row stratified
-            updateSliderInput(session, "stratanumber", max = 11)
+            #updateSliderInput(session, "stratanumber", max = 11)
+            updateSliderInput(session, "stratasamplenumber", max = 32)
         }
         else if(input$stratanames == "Panel") {
             # Panel stratified
-            updateSliderInput(session, "stratanumber", max = 16)
+            # updateSliderInput(session, "stratanumber", max = 176)
+            updateSliderInput(session, "stratasamplenumber", max = 2, value = 1)
         }
-        })
+        else if(input$stratanames == "Rootstock") {
+            # Panel stratified
+            #pdateSliderInput(session, "stratanumber", max = 8)
+            updateSliderInput(session, "stratasamplenumber", max = 44)
+        }
+    })
+    
+    
     
     #Sample with replacement?
     output$replacement <- renderText({ input$replacement })
@@ -151,14 +162,25 @@ server <- function(input, output, session) {
                 if(input$replacement == FALSE )
                 {Coombe_map$sample <- srswor(input$samplenumber, length(Coombe_map$Vine_ID))}
                 else if(input$replacement == TRUE )
-                    {Coombe_map$sample <- srswr(input$samplenumber, length(Coombe_map$Vine_ID))}
+                {Coombe_map$sample <- srswr(input$samplenumber, length(Coombe_map$Vine_ID))}
             }
             else if(input$select == 2) {
                 
-                a <- table(Coombe_map$Rootstock)
+                #a <- table(Coombe_map$Rootstock)
+                
+                if(input$stratanames == "Panel") {
+                    col <- "PanelCluster"
+                }
+                else {
+                    col <- input$stratanames
+                }
+                
                 
                 # Minh to update size to be based on slider
-                sample <- strata(Coombe_map,c("Rootstock"), size=round(a*0.2), method=ifelse(test = input$replacement, "srswr", "srswor"))
+                sample <- strata(Coombe_map, col, 
+                                 size=rep(input$stratasamplenumber, nrow(unique(Coombe_map[,col]))), 
+                                          method=ifelse(test = input$replacement, "srswr", "srswor"))
+                print(sample)
                 Coombe_map$sample <- 0
                 Coombe_map$sample[sample$ID_unit] <- 1
                 
@@ -174,17 +196,18 @@ server <- function(input, output, session) {
             }
             
             Coombe_map
-            }
+        }
     )
     
     output$Vineyard_map <- renderPlot({
-        ggplot(coombe(), aes(x= Row, y = Column, color = as.factor(sample))) + geom_point()  + 
-            scale_color_manual(values = c("0"= "blue", "1"= "red"), labels = c("Non Sample", "Sample")) + 
-            #scale_x_reverse() + 
-            ggtitle("Map of Coombe Vineyard") + theme(legend.position = "top") + labs(color = 'Sampling plan')
+        ggplot(coombe(), aes(x= Row, y = Column, color = Rootstock)) + geom_point(size = 3)  + 
+            ggtitle("Map of Coombe Vineyard") + labs(color = 'Rootstock') + 
+            geom_point(aes(shape = as.factor(sample), alpha = sample, size = 3*sample), colour = "grey30") + 
+            scale_shape_manual(values=c(16, 15)) + guides(size = FALSE, alpha = FALSE, shape = FALSE) + 
+            theme_bw() + theme(legend.position = "top")
     })
     
-  
+    
     
     
 }
