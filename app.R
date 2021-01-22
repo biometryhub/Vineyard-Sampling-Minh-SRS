@@ -37,24 +37,44 @@ ui <- dashboardPage(
                     condition = "input.select == 1",
                     selectInput(
                         "clustervariable", "Cluster Variable",
-                        c("Rootstock", "Row", "Panel", "Column")
+                        c("Row", "Panel", "Rootstock")
                     ),
+                    
+                        
                     sliderInput(
-                        "clusternumber", "Number of Clusters", min = 1, max = 50, value = 10
-                    ) 
+                        "clusternumber", "Number of Clusters", min = 1, max = 11, value = 3
+                    )
+                    
+                    
                 ),
                 # Only show this panel if stratified is selected
                 conditionalPanel(
                     condition = "input.select == 2",
-                    sliderInput("breakCount", "Break Count", min = 1, max = 50, value = 10)
+                    # Minh complete
+                    selectInput(
+                        "stratanames", "Stratified on Rootstock based on:",
+                        c("Row", "Panel")
+                     ),
+                     sliderInput(
+                         "stratanumber", "Number of Stratum", min = 1, max = 11, value = 3
+                    )
+                    # sliderInput(
+                    #     "clusternumber", "Number of Clusters", min = 1, max = 11, value = 3
+                    # )
                 ),
+                
                 # Show this for SRS
                 conditionalPanel(
                     condition = "input.select == 3",
                 sliderInput(inputId = "samplenumber", label = "Number of samples:", 
                             min = 1, max = nrow(Coombe_map), value = 30)
                 ),
-                actionButton("submit", label = "Submit"), 
+                
+                # Minh complete
+                # Add a checkbox here to say "Sample with replacement?"
+
+                checkboxInput("replacement", "Sample with replacement", FALSE),
+                actionButton("submit", label = "Submit") 
                 
         
                 
@@ -66,7 +86,7 @@ ui <- dashboardPage(
     )
 )
 
-server <- function(input, output) {
+server <- function(input, output, session) {
     #Simple Random Sampling
     
     # output$slider <- renderUI (switch (input$select, '3'= {sliderInput(inputId = "samplenumber", label = "Number of samples:", 
@@ -83,35 +103,41 @@ server <- function(input, output) {
     histdata <- rnorm(500)
     #Select type of sampling
     output$value <- renderPrint({ input$select })
-    #Simple Random Sampling
-    # output$plot1 <- renderPlot({
-    #     print(sample(Coombe_map$Vine_ID, size = input$samplenumber))
-    #    
-    #     #data(Coombe_map)
-    #     Tot= Coombe_map$Vine_ID
-    #     name= Coombe_map$Vine_ID
-    #     n=input$samplenumber
-    #     s=srswor(n, length(Tot))
-    #     simplerandom <- as.vector(name[s==1])
-    #     print(simplerandom)
-    #     Coombe_map$sample <- s
-    #     s=srswor(input$samplenumber, length(Coombe_map$Vine_ID))
-    #     #sample_df <- data.frame(Coombe_map$Vine_ID, s)
-    #     #print(sample_df)
-    #     #simplerandom <- srswor(input$samplenumber, N = 352)
-    #     #print(simplerandom)
-    # #Cluster Sampling
-    # 
-    # #Render sampling plan
-    #     output$submit <- renderPrint({ input$submit })
-    #     
-    # #Histogram     
-    #     data <- histdata[seq_len(input$samplenumber)]
-    #     hist(data)
-    # })
-    # 
+
     #Vineyard Map
     # Set up the data frame using an eventReactive() or possibly observeEvent()
+    observe({
+        #  Minh complete
+        if(input$clustervariable == 'Row') {
+            # Row cluster
+            updateSliderInput(session, "clusternumber", max = 11)
+        }
+        else if(input$clustervariable == "Rootstock") {
+            # Rootstock
+            updateSliderInput(session, "clusternumber", max = 8)
+        }
+        else if(input$clustervariable == "Panel") { 
+            # Panel
+            updateSliderInput(session, "clusternumber", max = 16)
+        }
+        
+    })
+    
+    #For stratified sampling
+    observe({
+        #  Minh complete
+        if(input$stratanames == 'Row') {
+            # Row stratified
+            updateSliderInput(session, "stratanumber", max = 11)
+        }
+        else if(input$stratanames == "Panel") {
+            # Panel stratified
+            updateSliderInput(session, "stratanumber", max = 16)
+        }
+        })
+    
+    #Sample with replacement?
+    output$replacement <- renderText({ input$replacement })
     
     coombe <- eventReactive(#Do stuff in here to the data set
         #To use this we start with the name of the input to react to
@@ -121,15 +147,27 @@ server <- function(input, output) {
             Coombe_map$sample <- 0
             if(input$select == 3) {
                 #Generate Simple Random Sample
-                Coombe_map$sample <- srswor(input$samplenumber, length(Coombe_map$Vine_ID))
+                # Minh to complete - have to use full if statements here
+                if(input$replacement == FALSE )
+                {Coombe_map$sample <- srswor(input$samplenumber, length(Coombe_map$Vine_ID))}
+                else if(input$replacement == TRUE )
+                    {Coombe_map$sample <- srswr(input$samplenumber, length(Coombe_map$Vine_ID))}
             }
-            else if(FALSE) {
-                s=strata(Coombe_map,c(input$strata), size=round(a*0.2), method="srswor")
+            else if(input$select == 2) {
+                
+                a <- table(Coombe_map$Rootstock)
+                
+                # Minh to update size to be based on slider
+                sample <- strata(Coombe_map,c("Rootstock"), size=round(a*0.2), method=ifelse(test = input$replacement, "srswr", "srswor"))
+                Coombe_map$sample <- 0
+                Coombe_map$sample[sample$ID_unit] <- 1
+                
                 # Generate Stratified Sample
             }
             else {
                 #Generate cluster sample
-                sample <- cluster(Coombe_map, "Row", input$clusternumber, method = "srswor")
+                # Minh to complete
+                sample <- cluster(Coombe_map, input$clustervariable, input$clusternumber, method = ifelse(test = input$replacement, "srswr", "srswor"))
                 # Then we need to somehow select all the ID_unit values from Coombe_map so they are listed as 1, and everything else is 0
                 Coombe_map$sample <- 0
                 Coombe_map$sample[sample$ID_unit] <- 1
