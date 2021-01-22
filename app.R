@@ -6,6 +6,8 @@ library(readxl)
 library(sampling)
 library(ggplot2)
 
+options(shiny.usecairo=T)
+
 Coombe_map <- read_excel("Coombe_map.xlsx")
 
 ui <- dashboardPage(
