@@ -14,10 +14,10 @@ Coombe_map <- read_excel("Coombe_map.xlsx")
 ui <- dashboardPage(
     dashboardHeader(title = "Vineyard Sampling"),
     sidebar <- dashboardSidebar(
-        sidebarMenu(
+        sidebarMenu(id = "tabs",
             menuItem("Home", tabName = "Home"),
-            menuItem("Sampling Plan", tabName = "Sampling plan"),
-            menuItem("Data entry", tabName = "Data entry"),
+            menuItem("Sampling Plan", tabName = "Sampling_plan"),
+            menuItem("Data entry", tabName = "Data_entry"),
             menuItem("Plots", tabName = "Plots/ Analysis"),
             menuItem("Acknowledgements", tabName = "Acknowledgements")
         )
@@ -25,74 +25,104 @@ ui <- dashboardPage(
     ),
     dashboardBody(
         # Boxes need to be put in a row (or column)
-        fluidRow(
-            
-            box(plotOutput("Vineyard_map", height = 500),
-                # Minh compelte
-                # Add download button here for plot
-                downloadButton('downloadMap', 'Download Map')
+        tabItems(
+            tabItem( tabName = "Sampling_plan",
+                     
+                     fluidRow(
+                         
+                         box(plotOutput("Vineyard_map", height = 500),
+                             # Minh compelte
+                             # Add download button here for plot
+                             downloadButton('downloadMap', 'Download Map')
+                         ),
+                         
+                         box(
+                             title = "Sampling plan",
+                             selectInput("select", label = h3("Type of Sampling"), 
+                                         choices = list("Cluster Sampling" = 1, "Stratified Sampling" = 2, "Simple Random Sampling" = 3), 
+                                         selected = 1),
+                             
+                             conditionalPanel(
+                                 # Cluster sampling
+                                 condition = "input.tabs == 'Sampling_plan' & input.select == 1",
+                                 selectInput(
+                                     "clustervariable", "Cluster Variable",
+                                     c("Row", "Panel", "Rootstock")
+                                 ),
+                                 
+                                 
+                                 sliderInput(
+                                     "clusternumber", "Number of Clusters", min = 1, max = 11, value = 3
+                                 )
+                                 
+                                 
+                             ),
+                             # Only show this panel if stratified is selected
+                             conditionalPanel(
+                                 condition = "input.tabs == 'Sampling_plan' & input.select == 2",
+                                 
+                                 selectInput(
+                                     "stratanames", "Stratified on Rootstock based on:",
+                                     c("Row", "Panel", "Rootstock")
+                                 ),
+                                 # sliderInput(
+                                 #     "stratanumber", "Number of Strata", min = 1, max = 11, value = 3
+                                 # ),
+                                 sliderInput(
+                                     "stratasamplenumber", "Number of Samples within a Strata", min = 1, max = 11, value = 3
+                                 )
+                             ),
+                             
+                             # Show this for SRS
+                             conditionalPanel(
+                                 condition = "input.tabs == 'Sampling_plan' & input.select == 3",
+                                 sliderInput(inputId = "samplenumber", label = "Number of samples:", 
+                                             min = 1, max = nrow(Coombe_map), value = 30)
+                             ),
+                             
+                             checkboxInput("replacement", "Sample with replacement?", FALSE),
+                             actionButton("submit", label = "Generate Plan") 
+                             
+                         )
+                     ),
+                     
+                     fluidRow(
+                         box(width = 12,
+                             downloadButton('downloadPlan', 'Download Sampling Plan'),
+                             # Add table here to display samples chosen
+                             DT::dataTableOutput("plan")
+                         )
+                     )
             ),
-            
-            box(
-                title = "Sampling plan",
-                selectInput("select", label = h3("Type of Sampling"), 
-                            choices = list("Cluster Sampling" = 1, "Stratified Sampling" = 2, "Simple Random Sampling" = 3), 
-                            selected = 1),
-                
-                conditionalPanel(
-                    # Cluster sampling
-                    condition = "input.select == 1",
-                    selectInput(
-                        "clustervariable", "Cluster Variable",
-                        c("Row", "Panel", "Rootstock")
-                    ),
-                    
-                    
-                    sliderInput(
-                        "clusternumber", "Number of Clusters", min = 1, max = 11, value = 3
-                    )
-                    
-                    
-                ),
-                # Only show this panel if stratified is selected
-                conditionalPanel(
-                    condition = "input.select == 2",
-                    
-                    selectInput(
-                        "stratanames", "Stratified on Rootstock based on:",
-                        c("Row", "Panel", "Rootstock")
-                    ),
-                    # sliderInput(
-                    #     "stratanumber", "Number of Strata", min = 1, max = 11, value = 3
-                    # ),
-                    sliderInput(
-                        "stratasamplenumber", "Number of Samples within a Strata", min = 1, max = 11, value = 3
-                    )
-                ),
-                
-                # Show this for SRS
-                conditionalPanel(
-                    condition = "input.select == 3",
-                    sliderInput(inputId = "samplenumber", label = "Number of samples:", 
-                                min = 1, max = nrow(Coombe_map), value = 30)
-                ),
-                
-                checkboxInput("replacement", "Sample with replacement?", FALSE),
-                actionButton("submit", label = "Generate Plan") 
-                
-            )
-        ),
-        
-        fluidRow(
-            box(width = 12,
-                # Add table here to display samples chosen
-                DT::dataTableOutput("plan")
+            tabItem( tabName = "Data_entry",
+                     fluidRow(
+                         
+                         box(
+                             numericInput("Vine_ID", "Vine ID:", 1, min = 1, max = 352),
+                             selectInput("Rootstock", "Rootstock",
+                                         c("Ramsey","SO 4","BVRC12","Teleki 5C","Schwarzmann","K 51-40" ,"Ruggeri 140" ,"420 A")),
+                                         #textInput("caption", "Caption", "Data Summary"),
+                             numericInput("trunk", "Trunk Circumference", 1, min = 1, max = 352),
+                             
+                             actionButton("submit_data", label = "Submit Data") 
+                                         
+                             )
+                     ),
+                     fluidRow(
+                         box(width = 12,
+                             downloadButton('downloadData', 'Download Sampling Data'),
+                             #dataTableOutput('sampled_coombe'),
+                             # Add table here to display samples chosen
+                             DT::dataTableOutput("sampled_coombe")
+                         )
+                     )  
+                     
             )
         )
     )
 )
 
-server <- function(input, output, session) {
+server <- function(input, output, session){
     #Simple Random Sampling
     
     
@@ -217,10 +247,10 @@ server <- function(input, output, session) {
     
     #Set up Sampling table
     output$plan <- DT::renderDataTable({
-        
-        DT::datatable(coombe(), rownames = F, extensions = "Responsive", plugins = 'natural',
-                                        options = list(lengthMenu = list(c(3, 10, -1), c('3', '10', 'All')),
-                                                       pageLength = 3, scrollX = TRUE))
+        data <- coombe()[coombe()$sample == 1,]
+        DT::datatable(data, rownames = F, extensions = "Responsive", plugins = 'natural',
+                      options = list(lengthMenu = list(c(3, 10, -1), c('3', '10', 'All')),
+                                     pageLength = 3, scrollX = TRUE))
         # return(data_table)
     })
     
@@ -231,11 +261,30 @@ server <- function(input, output, session) {
             ggsave(file,plotOutput())
         }
     )
-    # Minh complete
-    # Add downloadHandler functions here
-    # Try and copy the example I sent from Stack Overflow
-    # https://stackoverflow.com/questions/14810409/save-plots-made-in-a-shiny-app
     
+    output$downloadPlan <- downloadHandler(
+        filename = function() { "sampling_plan.csv" },
+        content = function(file) {
+            write.csv( x =coombe(), file, row.names = FALSE)
+        }
+    )
+    #2. Data entry
+    #Output for Data entry - collect data into a data frame
+    coombe_sampled <- eventReactive(input$submit_data, {data.frame("Vine ID" = input$Vine_ID, "Rootstock"= input$Rootstock, "Trunk Circumference" = input$trunk)}
+    )
+    print(coombe_sampled)
+    #output$sampled_coombe <- renderDataTable(coombe_sampled)
+    
+    output$sampled_coombe <- DT::renderDataTable({
+        coombe_sampled()
+        DT::datatable(data, rownames = F, extensions = "Responsive", plugins = 'natural',
+                      options = list(lengthMenu = list(c(3, 10, -1), c('3', '10', 'All')),
+                                     pageLength = 3, scrollX = TRUE))
+        # return(data_table)
+    })
+    
+    #Submit button for data collection
+    observeEvent(input$submit_data, renderPrint(coombe_sampled))
     
 }
 
