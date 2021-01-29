@@ -6,6 +6,7 @@ library(readxl)
 library(sampling)
 library(ggplot2)
 library(Cairo)
+library(dplyr)
 
 options(shiny.usecairo=T)
 
@@ -15,11 +16,11 @@ ui <- dashboardPage(
     dashboardHeader(title = "Vineyard Sampling"),
     sidebar <- dashboardSidebar(
         sidebarMenu(id = "tabs",
-            menuItem("Home", tabName = "Home"),
-            menuItem("Sampling Plan", tabName = "Sampling_plan"),
-            menuItem("Data entry", tabName = "Data_entry"),
-            menuItem("Plots", tabName = "Plots/ Analysis"),
-            menuItem("Acknowledgements", tabName = "Acknowledgements")
+                    menuItem("Home", tabName = "Home"),
+                    menuItem("Sampling Plan", tabName = "Sampling_plan"),
+                    menuItem("Data entry", tabName = "Data_entry"),
+                    menuItem("Plots", tabName = "Plots/ Analysis"),
+                    menuItem("Acknowledgements", tabName = "Acknowledgements")
         )
         
     ),
@@ -97,16 +98,18 @@ ui <- dashboardPage(
             tabItem( tabName = "Data_entry",
                      fluidRow(
                          
-                         box(
+                         box(title = "Enter your measurements here",
                              numericInput("Vine_ID", "Vine ID:", 1, min = 1, max = 352),
                              selectInput("Rootstock", "Rootstock",
                                          c("Ramsey","SO 4","BVRC12","Teleki 5C","Schwarzmann","K 51-40" ,"Ruggeri 140" ,"420 A")),
-                                         #textInput("caption", "Caption", "Data Summary"),
+                             #textInput("caption", "Caption", "Data Summary"),
                              numericInput("trunk", "Trunk Circumference", 1, min = 1, max = 352),
-                             
+                             numericInput("cane", "Cane Count", 1, min = 1, max = 352),
+                             numericInput("diameter", "Cane Diameter", 1, min = 1, max = 352),
+                             numericInput("internode", "Internode Distance", 0.1, min = 1, max = 352),
                              actionButton("submit_data", label = "Submit Data") 
-                                         
-                             )
+                             
+                         )
                      ),
                      fluidRow(
                          box(width = 12,
@@ -270,21 +273,40 @@ server <- function(input, output, session){
     )
     #2. Data entry
     #Output for Data entry - collect data into a data frame
-    coombe_sampled <- eventReactive(input$submit_data, {data.frame("Vine ID" = input$Vine_ID, "Rootstock"= input$Rootstock, "Trunk Circumference" = input$trunk)}
+    #Create blank data frame first
+    # data_input <- data.frame(VineID = numeric(), Trunk_Circumference = numeric(), Cane = numeric(),
+    # Diameter = numeric(), circumference = numeric())
+    #data_input <- rbind(data_input, data.frame(VineID = input$Vine_ID, Trunk_Circumference = input$trunk, Cane = input$cane,Diameter = input$diameter))
+    #eventReactive(input$submit_data, merge(data_input))
+    
+    
+    #coombe_sampled <- data.frame(Vine_ID = as.numeric(), Rootstock = as.character(),cane = as.numeric(),
+    # diameter = as.numeric(), circumference = as.numeric())
+    coombe_sampled <- eventReactive(input$submit_data, {
+        input_data <- data.frame(Vine_ID = input$Vine_ID, 
+                                 cane_count = input$cane, 
+                                 trunk_circumference = input$trunk,
+                                 cane_diameter = input$diameter,
+                                 internode_length = input$internode)
+        results <- merge(coombe(), input_data, by = "Vine_ID", all.x = TRUE)
+    }
     )
-    print(coombe_sampled)
+    #coombe_sampled <- eventReactive(input$submit_data, {data.frame("Vine ID" = input$Vine_ID, "Rootstock"= input$Rootstock, "Trunk Circumference" = input$trunk)}
+    #)
     #output$sampled_coombe <- renderDataTable(coombe_sampled)
     
     output$sampled_coombe <- DT::renderDataTable({
-        coombe_sampled()
-        DT::datatable(data, rownames = F, extensions = "Responsive", plugins = 'natural',
+        output <- coombe_sampled() %>% 
+            select(Vine_ID, Rootstock, sample, cane_count, trunk_circumference, cane_diameter, internode_length) %>% 
+            filter(!is.na(trunk_circumference))
+        DT::datatable(output, rownames = F, extensions = "Responsive", plugins = 'natural',
                       options = list(lengthMenu = list(c(3, 10, -1), c('3', '10', 'All')),
                                      pageLength = 3, scrollX = TRUE))
         # return(data_table)
     })
     
     #Submit button for data collection
-    observeEvent(input$submit_data, renderPrint(coombe_sampled))
+    #observeEvent(input$submit_data, renderPrint(coombe_sampled))
     
 }
 
