@@ -7,6 +7,7 @@ library(sampling)
 library(ggplot2)
 library(Cairo)
 library(dplyr)
+library(rhandsontable)
 
 options(shiny.usecairo=T)
 
@@ -116,7 +117,7 @@ ui <- dashboardPage(
                              downloadButton('downloadData', 'Download Sampling Data'),
                              #dataTableOutput('sampled_coombe'),
                              # Add table here to display samples chosen
-                             DT::dataTableOutput("sampled_coombe")
+                             rhandsontable::renderRHandsontable("sampled_coombe")
                          )
                      )  
                      
@@ -295,13 +296,17 @@ server <- function(input, output, session){
     #)
     #output$sampled_coombe <- renderDataTable(coombe_sampled)
     
-    output$sampled_coombe <- DT::renderDataTable({
+    output$sampled_coombe <- rhandsontable::rhandsontable(output, stretchH = "all") %>% 
+        hot_cols(hot, columnSorting = T)({
         output <- coombe_sampled() %>% 
             select(Vine_ID, Rootstock, sample, cane_count, trunk_circumference, cane_diameter, internode_length) %>% 
             filter(!is.na(trunk_circumference))
-        DT::datatable(output, rownames = F, extensions = "Responsive", plugins = 'natural',
-                      options = list(lengthMenu = list(c(3, 10, -1), c('3', '10', 'All')),
-                                     pageLength = 3, scrollX = TRUE))
+        
+        rhandsontable::rhandsontable(output, stretchH = "all") %>% 
+            hot_cols(columnSorting = T) 
+        #(output, rownames = F, extensions = "Responsive", plugins = 'natural',
+                     # options = list(lengthMenu = list(c(3, 10, -1), c('3', '10', 'All')),
+                      #               pageLength = 3, scrollX = TRUE))
         # return(data_table)
     })
     
