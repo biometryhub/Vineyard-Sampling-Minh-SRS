@@ -17,7 +17,7 @@ ui <- dashboardPage(
     dashboardHeader(title = "Vineyard Sampling"),
     sidebar <- dashboardSidebar(
         sidebarMenu(id = "tabs",
-                    menuItem("Home", tabName = "Home"),
+                    #menuItem("Home", tabName = "Home"),
                     menuItem("Sampling Plan", tabName = "Sampling_plan"),
                     menuItem("Data entry", tabName = "Data_entry"),
                     menuItem("Plots", tabName = "Plots/ Analysis"),
@@ -115,9 +115,10 @@ ui <- dashboardPage(
                      fluidRow(
                          box(width = 12,
                              downloadButton('downloadData', 'Download Sampling Data'),
+                             #br(),
                              #dataTableOutput('sampled_coombe'),
                              # Add table here to display samples chosen
-                             rhandsontable::renderRHandsontable("sampled_coombe")
+                             rhandsontable::rHandsontableOutput("sampled_coombe")
                          )
                      )  
                      
@@ -296,14 +297,17 @@ server <- function(input, output, session){
     #)
     #output$sampled_coombe <- renderDataTable(coombe_sampled)
     
-    output$sampled_coombe <- rhandsontable::rhandsontable(output, stretchH = "all") %>% 
-        hot_cols(hot, columnSorting = T)({
-        output <- coombe_sampled() %>% 
-            select(Vine_ID, Rootstock, sample, cane_count, trunk_circumference, cane_diameter, internode_length) %>% 
-            filter(!is.na(trunk_circumference))
+    output$sampled_coombe <- rhandsontable::renderRHandsontable({
+    
+    #rhandsontable::rhandsontable(coombe_sampled(), stretchH = "all") %>% 
+    #    hot_cols(columnSorting = T)
         
-        rhandsontable::rhandsontable(output, stretchH = "all") %>% 
-            hot_cols(columnSorting = T) 
+        output <- coombe_sampled() %>% 
+             select(Vine_ID, Rootstock, sample, cane_count, trunk_circumference, cane_diameter, internode_length) %>% 
+             filter(!is.na(trunk_circumference))
+         
+         rhandsontable::rhandsontable(output, stretchH = "all") %>% 
+             hot_cols(columnSorting = T) 
         #(output, rownames = F, extensions = "Responsive", plugins = 'natural',
                      # options = list(lengthMenu = list(c(3, 10, -1), c('3', '10', 'All')),
                       #               pageLength = 3, scrollX = TRUE))
