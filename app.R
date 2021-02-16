@@ -128,6 +128,9 @@ ui <- dashboardPage(
 )
 
 server <- function(input, output, session){
+    
+    rvs <- reactiveValues(coombe_sampled = NULL)
+    
     #Simple Random Sampling
     
     
@@ -142,9 +145,9 @@ server <- function(input, output, session){
     #                                                                              selected = 1) })
     # )
     set.seed(122)
-    histdata <- rnorm(500)
+    #histdata <- rnorm(500)
     #Select type of sampling
-    output$value <- renderPrint({ input$select })
+    #output$value <- renderPrint({ input$select })
     
     #Vineyard Map
     # Set up the data frame using an eventReactive() or possibly observeEvent()
@@ -284,38 +287,47 @@ server <- function(input, output, session){
     
     #coombe_sampled <- data.frame(Vine_ID = as.numeric(), Rootstock = as.character(),cane = as.numeric(),
     # diameter = as.numeric(), circumference = as.numeric())
-    coombe_sampled <- eventReactive(input$submit_data, {
-        input_data <- data.frame(Vine_ID = input$Vine_ID, 
+    
+    # Minh to complete
+    # Change from eventReactive to observeEvent
+    # Inside the observe statement, assign the result to the reactive values variable
+    # E.g. rvs$coombe_sampled <- results
+    # Then replace where we have used coombe_sampled with rvs$coombe_sampled
+    # We will want to change the way we merge this data, and use row referecnes from VineID instead
+    # We want to change from merge(..., input_data) to rbind(rvs$coombe_sampled, input_data), 
+    # and add the merge in the download button code
+    
+    observeEvent(input$submit_data, {
+        rvs$coombe_sampled  <- rbind(rvs$coombe_sampled, 
+                                     data.frame(Vine_ID = input$Vine_ID, 
                                  cane_count = input$cane, 
                                  trunk_circumference = input$trunk,
                                  cane_diameter = input$diameter,
                                  internode_length = input$internode)
-        results <- merge(coombe(), input_data, by = "Vine_ID", all.x = TRUE)
+        
+        )
     }
     )
-    #coombe_sampled <- eventReactive(input$submit_data, {data.frame("Vine ID" = input$Vine_ID, "Rootstock"= input$Rootstock, "Trunk Circumference" = input$trunk)}
-    #)
-    #output$sampled_coombe <- renderDataTable(coombe_sampled)
+    
+    print(rvs)
+    # Merge at download button
+    output$downloadData <- downloadHandler(
+        filename = function() { "sampling_data.csv" },
+        content = function(file) {
+            sampling_csv <- merge(coombe(), rvs$coombe_sampled, by = "Vine_ID", all.x = TRUE)
+            write.csv( x = sampling_csv, file, row.names = FALSE)
+        }
+    )
+   
     
     output$sampled_coombe <- rhandsontable::renderRHandsontable({
-    
-    #rhandsontable::rhandsontable(coombe_sampled(), stretchH = "all") %>% 
-    #    hot_cols(columnSorting = T)
-        
-        output <- coombe_sampled() %>% 
-             select(Vine_ID, Rootstock, sample, cane_count, trunk_circumference, cane_diameter, internode_length) %>% 
-             filter(!is.na(trunk_circumference))
-         
-         rhandsontable::rhandsontable(output, stretchH = "all") %>% 
+         rhandsontable::rhandsontable(rvs$coombe_sampled, stretchH = "all") %>% 
              hot_cols(columnSorting = T) 
-        #(output, rownames = F, extensions = "Responsive", plugins = 'natural',
-                     # options = list(lengthMenu = list(c(3, 10, -1), c('3', '10', 'All')),
-                      #               pageLength = 3, scrollX = TRUE))
-        # return(data_table)
     })
     
-    #Submit button for data collection
-    #observeEvent(input$submit_data, renderPrint(coombe_sampled))
+    observeEvent(input$sampled_coombe, {
+        rvs$coombe_sampled <- hot_to_r(input$sampled_coombe)
+    })
     
 }
 
