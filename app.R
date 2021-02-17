@@ -9,132 +9,216 @@ library(Cairo)
 library(dplyr)
 library(rhandsontable)
 
-options(shiny.usecairo=T)
+options(shiny.usecairo = T)
 
 Coombe_map <- read_excel("Coombe_map.xlsx")
 
 ui <- dashboardPage(
     dashboardHeader(title = "Vineyard Sampling"),
     sidebar <- dashboardSidebar(
-        sidebarMenu(id = "tabs",
-                    #menuItem("Home", tabName = "Home"),
-                    menuItem("Sampling Plan", tabName = "Sampling_plan"),
-                    menuItem("Data entry", tabName = "Data_entry"),
-                    menuItem("Plots", tabName = "Plots/ Analysis"),
-                    menuItem("Acknowledgements", tabName = "Acknowledgements")
+        sidebarMenu(
+            id = "tabs",
+            #menuItem("Home", tabName = "Home"),
+            menuItem("Sampling Plan", tabName = "Sampling_plan"),
+            menuItem("Data entry", tabName = "Data_entry"),
+            menuItem("Analysis/Plots", tabName = "Plots_Analysis"),
+            menuItem("Acknowledgements", tabName = "Acknowledgements")
         )
         
     ),
-    dashboardBody(
-        # Boxes need to be put in a row (or column)
+    dashboardBody(# Boxes need to be put in a row (or column)
         tabItems(
-            tabItem( tabName = "Sampling_plan",
-                     
-                     fluidRow(
-                         
-                         box(plotOutput("Vineyard_map", height = 500),
-                             # Minh compelte
-                             # Add download button here for plot
-                             downloadButton('downloadMap', 'Download Map')
-                         ),
-                         
-                         box(
-                             title = "Sampling plan",
-                             selectInput("select", label = h3("Type of Sampling"), 
-                                         choices = list("Cluster Sampling" = 1, "Stratified Sampling" = 2, "Simple Random Sampling" = 3), 
-                                         selected = 1),
-                             
-                             conditionalPanel(
-                                 # Cluster sampling
-                                 condition = "input.tabs == 'Sampling_plan' & input.select == 1",
-                                 selectInput(
-                                     "clustervariable", "Cluster Variable",
-                                     c("Row", "Panel", "Rootstock")
-                                 ),
-                                 
-                                 
-                                 sliderInput(
-                                     "clusternumber", "Number of Clusters", min = 1, max = 11, value = 3
-                                 )
-                                 
-                                 
-                             ),
-                             # Only show this panel if stratified is selected
-                             conditionalPanel(
-                                 condition = "input.tabs == 'Sampling_plan' & input.select == 2",
-                                 
-                                 selectInput(
-                                     "stratanames", "Stratified on Rootstock based on:",
-                                     c("Row", "Panel", "Rootstock")
-                                 ),
-                                 # sliderInput(
-                                 #     "stratanumber", "Number of Strata", min = 1, max = 11, value = 3
-                                 # ),
-                                 sliderInput(
-                                     "stratasamplenumber", "Number of Samples within a Strata", min = 1, max = 11, value = 3
-                                 )
-                             ),
-                             
-                             # Show this for SRS
-                             conditionalPanel(
-                                 condition = "input.tabs == 'Sampling_plan' & input.select == 3",
-                                 sliderInput(inputId = "samplenumber", label = "Number of samples:", 
-                                             min = 1, max = nrow(Coombe_map), value = 30)
-                             ),
-                             
-                             checkboxInput("replacement", "Sample with replacement?", FALSE),
-                             actionButton("submit", label = "Generate Plan") 
-                             
-                         )
-                     ),
-                     
-                     fluidRow(
-                         box(width = 12,
-                             downloadButton('downloadPlan', 'Download Sampling Plan'),
-                             # Add table here to display samples chosen
-                             DT::dataTableOutput("plan")
-                         )
-                     )
-            ),
-            tabItem( tabName = "Data_entry",
-                     fluidRow(
-                         
-                         box(title = "Enter your measurements here",
-                             numericInput("Vine_ID", "Vine ID:", 1, min = 1, max = 352),
-                             selectInput("Rootstock", "Rootstock",
-                                         c("Ramsey","SO 4","BVRC12","Teleki 5C","Schwarzmann","K 51-40" ,"Ruggeri 140" ,"420 A")),
-                             #textInput("caption", "Caption", "Data Summary"),
-                             numericInput("trunk", "Trunk Circumference", 1, min = 1, max = 352),
-                             numericInput("cane", "Cane Count", 1, min = 1, max = 352),
-                             numericInput("diameter", "Cane Diameter", 1, min = 1, max = 352),
-                             numericInput("internode", "Internode Distance", 0.1, min = 1, max = 352),
-                             actionButton("submit_data", label = "Submit Data") 
-                             
-                         )
-                     ),
-                     fluidRow(
-                         box(width = 12,
-                             downloadButton('downloadData', 'Download Sampling Data'),
-                             #br(),
-                             #dataTableOutput('sampled_coombe'),
-                             # Add table here to display samples chosen
-                             rhandsontable::rHandsontableOutput("sampled_coombe")
-                         )
-                     )  
-                     
-            )
-        )
-    )
+            tabItem(tabName = "Sampling_plan",
+                    
+                    fluidRow(
+                        box(
+                            plotOutput("Vineyard_map", height = 500),
+                            
+                            downloadButton('downloadMap', 'Download Map')
+                        ),
+                        
+                        box(
+                            title = "Sampling plan",
+                            selectInput(
+                                "select",
+                                label = h3("Type of Sampling"),
+                                choices = list(
+                                    "Cluster Sampling" = 1,
+                                    "Stratified Sampling" = 2,
+                                    "Simple Random Sampling" = 3
+                                ),
+                                selected = 1
+                            ),
+                            
+                            conditionalPanel(
+                                # Cluster sampling
+                                condition = "input.tabs == 'Sampling_plan' & input.select == 1",
+                                selectInput(
+                                    "clustervariable",
+                                    "Cluster Variable",
+                                    c("Row", "Panel", "Rootstock")
+                                ),
+                                
+                                
+                                sliderInput(
+                                    "clusternumber",
+                                    "Number of Clusters",
+                                    min = 1,
+                                    max = 11,
+                                    value = 3
+                                )
+                                
+                                
+                            ),
+                            # Only show this panel if stratified is selected
+                            conditionalPanel(
+                                condition = "input.tabs == 'Sampling_plan' & input.select == 2",
+                                
+                                selectInput(
+                                    "stratanames",
+                                    "Stratified on Rootstock based on:",
+                                    c("Row", "Panel", "Rootstock")
+                                ),
+                                
+                                sliderInput(
+                                    "stratasamplenumber",
+                                    "Number of Samples within a Strata",
+                                    min = 1,
+                                    max = 11,
+                                    value = 3
+                                )
+                            ),
+                            
+                            # Show this for SRS
+                            conditionalPanel(
+                                condition = "input.tabs == 'Sampling_plan' & input.select == 3",
+                                sliderInput(
+                                    inputId = "samplenumber",
+                                    label = "Number of samples:",
+                                    min = 1,
+                                    max = nrow(Coombe_map),
+                                    value = 30
+                                )
+                            ),
+                            
+                            checkboxInput("replacement", "Sample with replacement?", FALSE),
+                            
+                            #Set seed value
+                            p("The session's seed value is"),
+                            textOutput("random_seed"),
+                            numericInput(
+                                "customize_seed",
+                                "Or Customize seed value here:",
+                                NULL,
+                                min = 1,
+                                max = 1e6
+                            ),
+                            
+                            # Action button for plan generation
+                            actionButton("submit", label = "Generate Plan")
+                            
+                        )
+                    ),
+                    
+                    fluidRow(
+                        box(
+                            width = 12,
+                            downloadButton('downloadPlan', 'Download Sampling Plan'),
+                            # Add table here to display samples chosen
+                            DT::dataTableOutput("plan")
+                        )
+                    )),
+            tabItem(tabName = "Data_entry",
+                    fluidRow(
+                        box(
+                            width = 12,
+                            fileInput(
+                                "sampling_plan_file",
+                                "Upload your Sampling Plan (.csv) here",
+                                accept = c("text/csv",
+                                           ".csv")
+                            ),
+                            actionButton("submit_plan", label = "Upload")),
+                            
+                            box(
+                                width = 12,
+                                title = "Enter your measurements here",
+                                selectInput("Vine_ID", "Vine ID:", c(1:352)),
+                                selectInput(
+                                    "Rootstock",
+                                    "Rootstock",
+                                    c(
+                                        "Ramsey",
+                                        "SO 4",
+                                        "BVRC12",
+                                        "Teleki 5C",
+                                        "Schwarzmann",
+                                        "K 51-40" ,
+                                        "Ruggeri 140" ,
+                                        "420 A"
+                                    )
+                                ),
+                                numericInput(
+                                    "trunk",
+                                    "Trunk Circumference",
+                                    1,
+                                    min = 1,
+                                    max = 352
+                                ),
+                                numericInput("cane", "Cane Count", 1, min = 1, max = 352),
+                                numericInput("diameter", "Cane Diameter", 1, min = 1, max = 352),
+                                numericInput(
+                                    "internode",
+                                    "Internode Distance",
+                                    0.1,
+                                    min = 1,
+                                    max = 352
+                                ),
+                                actionButton("submit_data", label = "Submit Data")
+                                
+                            )
+                        ),
+                        fluidRow(
+                            box(
+                                width = 12,
+                                downloadButton('downloadData', 'Download Sampling Data'),
+                                
+                                # Add table here to display samples chosen
+                                rhandsontable::rHandsontableOutput("sampled_coombe")
+                            )
+                        )
+                        
+                    ),
+            
+            tabItem(tabName = "Plots_Analysis",
+                    fluidRow(box(
+                        width = 6,
+                        fileInput(
+                            "analysis_file",
+                            "Upload your Sampling Data (.csv) here",
+                            accept = c("text/csv",
+                                       ".csv")
+                        ),
+                        actionButton("submit_data1", label = "Submit Data")
+                        
+                    ))),
+            tabItem(tabName = "Acknowledgements",
+                    fluidRow(box(width = 12)))
+            
+        ))
 )
 
-server <- function(input, output, session){
-    
-    rvs <- reactiveValues(coombe_sampled = NULL)
-    
+server <- function(input, output, session) {
+    rvs <-
+        reactiveValues(coombe_sampled = NULL,
+                       coombe = Coombe_map,
+                       seed = NULL)
+    # coombe <- reactiveValues()
+    # seed <- reactiveValues()
     #Simple Random Sampling
+    #rvs$coombe
     
-    
-    # output$slider <- renderUI (switch (input$select, '3'= {sliderInput(inputId = "samplenumber", label = "Number of samples:", 
+    # output$slider <- renderUI (switch (input$select, '3'= {sliderInput(inputId = "samplenumber", label = "Number of samples:",
     #                                                                    min = 1, max = max(Coombe_map$Vine_ID), value = 30)},
     #                                    NULL
     # )
@@ -144,25 +228,41 @@ server <- function(input, output, session){
     #                                                                              choices = list("Rootstock" = 1, "Row" = 2, "Panel" = 3, "Column" = 4),
     #                                                                              selected = 1) })
     # )
-    set.seed(122)
-    #histdata <- rnorm(500)
-    #Select type of sampling
-    #output$value <- renderPrint({ input$select })
     
-    #Vineyard Map
-    # Set up the data frame using an eventReactive() or possibly observeEvent()
+    # Set Seed value
+    
+    #rvs$seed <- sample(1:1e6, 1)
+    output$random_seed <- renderText(rvs$seed)
+    # if the seed input box is not blank, use the seed they have entered
+    # Otherwise use the random seed
     observe({
+        if (!isTruthy(input$customize_seed))
+        {
+            rvs$seed <- sample(1:1e6, 1)
+        }
+        else {
+            rvs$seed <- input$customize_seed
+            #output$random_seed <- renderPrint(seed)
+        }
         
-        
-        if(input$clustervariable == 'Row') {
+        set.seed(rvs$seed)
+        #print(rvs$seed)
+    })
+    
+    
+    
+    #Select type of sampling
+    
+    observe({
+        if (input$clustervariable == 'Row') {
             # Row cluster
             updateSliderInput(session, "clusternumber", max = 11)
         }
-        else if(input$clustervariable == "Rootstock") {
+        else if (input$clustervariable == "Rootstock") {
             # Rootstock
             updateSliderInput(session, "clusternumber", max = 8)
         }
-        else if(input$clustervariable == "Panel") { 
+        else if (input$clustervariable == "Panel") {
             # Panel
             updateSliderInput(session, "clusternumber", max = 16)
         }
@@ -171,18 +271,20 @@ server <- function(input, output, session){
     
     #For stratified sampling
     observe({
-        
-        if(input$stratanames == 'Row') {
+        if (input$stratanames == 'Row') {
             # Row stratified
             #updateSliderInput(session, "stratanumber", max = 11)
             updateSliderInput(session, "stratasamplenumber", max = 32)
         }
-        else if(input$stratanames == "Panel") {
+        else if (input$stratanames == "Panel") {
             # Panel stratified
             # updateSliderInput(session, "stratanumber", max = 176)
-            updateSliderInput(session, "stratasamplenumber", max = 2, value = 1)
+            updateSliderInput(session,
+                              "stratasamplenumber",
+                              max = 2,
+                              value = 1)
         }
-        else if(input$stratanames == "Rootstock") {
+        else if (input$stratanames == "Rootstock") {
             # Panel stratified
             #pdateSliderInput(session, "stratanumber", max = 8)
             updateSliderInput(session, "stratasamplenumber", max = 44)
@@ -192,25 +294,34 @@ server <- function(input, output, session){
     
     
     #Sample with replacement?
-    output$replacement <- renderText({ input$replacement })
+    output$replacement <- renderText({
+        input$replacement
+    })
     
-    coombe <- eventReactive(#Do stuff in here to the data set
+    observeEvent(#Do stuff in here to the data set
         #To use this we start with the name of the input to react to
         # Then we run other code
-        # To use the updated data set, we call it via coombe()
+        # To use the updated data set, we call it via rvs$coombe
         input$submit, {
             Coombe_map$sample <- 0
-            if(input$select == 3) {
+            if (input$select == 3) {
                 #Generate Simple Random Sample
                 # Minh to complete - have to use full if statements here
-                if(input$replacement == FALSE )
-                {Coombe_map$sample <- srswor(input$samplenumber, length(Coombe_map$Vine_ID))}
-                else if(input$replacement == TRUE )
-                {Coombe_map$sample <- srswr(input$samplenumber, length(Coombe_map$Vine_ID))}
+                if (input$replacement == FALSE)
+                {
+                    Coombe_map$sample <-
+                        srswor(input$samplenumber,
+                               length(Coombe_map$Vine_ID))
+                }
+                else if (input$replacement == TRUE)
+                {
+                    Coombe_map$sample <-
+                        srswr(input$samplenumber,
+                              length(Coombe_map$Vine_ID))
+                }
             }
-            else if(input$select == 2) {
-                
-                if(input$stratanames == "Panel") {
+            else if (input$select == 2) {
+                if (input$stratanames == "Panel") {
                     col <- "PanelCluster"
                 }
                 else {
@@ -219,34 +330,87 @@ server <- function(input, output, session){
                 
                 
                 # Minh to update size to be based on slider
-                sample <- strata(Coombe_map, col, 
-                                 size=rep(input$stratasamplenumber, nrow(unique(Coombe_map[,col]))), 
-                                 method=ifelse(test = input$replacement, "srswr", "srswor"))
-                print(sample)
+                sample <- strata(
+                    Coombe_map,
+                    col,
+                    size = rep(input$stratasamplenumber, nrow(unique(
+                        Coombe_map[, col]
+                    ))),
+                    method = ifelse(test = input$replacement, "srswr", "srswor")
+                )
+                #print(sample)
                 Coombe_map$sample <- 0
                 Coombe_map$sample[sample$ID_unit] <- 1
                 
                 # Generate Stratified Sample
             }
             else {
-                #Generate cluster sample
-                # Minh to complete
-                sample <- cluster(Coombe_map, input$clustervariable, input$clusternumber, method = ifelse(test = input$replacement, "srswr", "srswor"))
-                # Then we need to somehow select all the ID_unit values from Coombe_map so they are listed as 1, and everything else is 0
+                sample <-
+                    cluster(
+                        Coombe_map,
+                        input$clustervariable,
+                        input$clusternumber,
+                        method = ifelse(test = input$replacement, "srswr", "srswor")
+                    )
                 Coombe_map$sample <- 0
                 Coombe_map$sample[sample$ID_unit] <- 1
             }
             
-            Coombe_map
-        }
-    )
+            rvs$coombe <- Coombe_map
+            
+            #print(rvs$coombe$Vine_ID[rvs$coombe$sample==1])
+            updateSelectInput(session, "Vine_ID", choices = rvs$coombe$Vine_ID[rvs$coombe$sample ==
+                                                                                   1])
+            
+            return(rvs$coombe)
+        })
+    #Use user data input to analyse
+    userFile <- reactive({
+        # If no file is selected, don't do anything
+        validate(need(input$sampling_plan_file, message = FALSE))
+        input$sampling_plan_file
+    })
+    # The user's data, parsed into a data frame
+    observeEvent( input$submit_plan  ,{
+        File <- reactive({input$sampling_plan_file})
+        #inputId = "file"
+        data <- read.csv(userFile()$datapath,
+                         header = F,
+                         # quote = input$quote,
+                         #sep = input$sep,
+                         #stringsAsFactors = stringsAsFactors
+                         )
+        print(data)
+        rvs$coombe <- data
+        updateSelectInput(session, "Vine_ID", choices = rvs$coombe$Vine_ID[rvs$coombe$sample ==
+                                                                               1])
+    })
     
     plotOutput <- reactive({
-        p <- ggplot(coombe(), aes(x= Row, y = Column, color = Rootstock)) + geom_point(size = 3)  + 
-            ggtitle("Map of Coombe Vineyard") + labs(color = 'Rootstock') + 
-            geom_point(aes(shape = as.factor(sample), alpha = sample, size = 3*sample), colour = "grey30") + 
-            scale_shape_manual(values=c(16, 15)) + guides(size = FALSE, alpha = FALSE, shape = FALSE) + 
-            theme_bw() + theme(plot.title = element_text(size = 16,hjust = 0.5),legend.position = "top")
+        #head(rvs$coombe)
+        p <-
+            ggplot(rvs$coombe, aes(
+                x = Row,
+                y = Column,
+                color = Rootstock
+            )) + geom_point(size = 3)  +
+            ggtitle("Map of Coombe Vineyard") + labs(color = 'Rootstock') +
+            scale_shape_manual(values = c(16, 15)) + guides(size = FALSE,
+                                                            alpha = FALSE,
+                                                            shape = FALSE) +
+            theme_bw() + theme(plot.title = element_text(size = 16, hjust = 0.5),
+                               legend.position = "top")
+        
+        if ("sample" %in% colnames(rvs$coombe)) {
+            p <- p +
+                geom_point(aes(
+                    shape = as.factor(sample),
+                    alpha = sample,
+                    size = 3 * sample
+                ),
+                colour = "grey30")
+        }
+        return(p)
     })
     
     output$Vineyard_map <- renderPlot({
@@ -255,79 +419,139 @@ server <- function(input, output, session){
     
     #Set up Sampling table
     output$plan <- DT::renderDataTable({
-        data <- coombe()[coombe()$sample == 1,]
-        DT::datatable(data, rownames = F, extensions = "Responsive", plugins = 'natural',
-                      options = list(lengthMenu = list(c(3, 10, -1), c('3', '10', 'All')),
-                                     pageLength = 3, scrollX = TRUE))
-        # return(data_table)
+        if ("sample" %in% colnames(rvs$coombe)) {
+            data <- rvs$coombe[rvs$coombe$sample == 1,]
+        }
+        else {
+            data <- NULL
+        }
+        
+        DT::datatable(
+            data,
+            rownames = F,
+            extensions = "Responsive",
+            plugins = 'natural',
+            options = list(
+                lengthMenu = list(c(3, 10, -1), c('3', '10', 'All')),
+                pageLength = 3,
+                scrollX = TRUE
+            )
+        )
+        # return(data_table)1
     })
     
     
     output$downloadMap <- downloadHandler(
-        filename = function() { "sampling_plan.png" },
+        filename = function() {
+            "sampling_plan.png"
+        },
         content = function(file) {
-            ggsave(file,plotOutput())
+            ggsave(file, plotOutput())
         }
     )
     
     output$downloadPlan <- downloadHandler(
-        filename = function() { "sampling_plan.csv" },
+        filename = function() {
+            "sampling_plan.csv"
+        },
         content = function(file) {
-            write.csv( x =coombe(), file, row.names = FALSE)
+            write.csv(x = rvs$coombe, file, row.names = FALSE)
         }
     )
     #2. Data entry
-    #Output for Data entry - collect data into a data frame
-    #Create blank data frame first
-    # data_input <- data.frame(VineID = numeric(), Trunk_Circumference = numeric(), Cane = numeric(),
-    # Diameter = numeric(), circumference = numeric())
-    #data_input <- rbind(data_input, data.frame(VineID = input$Vine_ID, Trunk_Circumference = input$trunk, Cane = input$cane,Diameter = input$diameter))
-    #eventReactive(input$submit_data, merge(data_input))
+    # Upload CSV file of the sampling plan
+    eventReactive(input$sampling_plan_file,
+                  sampling_csv <-
+                      read.csv(input$sampling_plan_file))
     
     
-    #coombe_sampled <- data.frame(Vine_ID = as.numeric(), Rootstock = as.character(),cane = as.numeric(),
-    # diameter = as.numeric(), circumference = as.numeric())
+    #Update select input depending on the sampling plan's Vine ID
+    #observe(
     
-    # Minh to complete
-    # Change from eventReactive to observeEvent
-    # Inside the observe statement, assign the result to the reactive values variable
-    # E.g. rvs$coombe_sampled <- results
-    # Then replace where we have used coombe_sampled with rvs$coombe_sampled
-    # We will want to change the way we merge this data, and use row referecnes from VineID instead
-    # We want to change from merge(..., input_data) to rbind(rvs$coombe_sampled, input_data), 
-    # and add the merge in the download button code
+    # Get vine numbers where rvs$coombe$sample == 1
+    # But what happens before we generate a sample? Do we need to handle that?
+    
+    #if("sample" %in% colnames(rvs$coombe)) {
+    #
+    #}
+    
+    # if(length(rvs$coombe) == 0) {
+    # If coombe$ Vine_ID = NULL
+    #updateSelectInput(session, "Vine_ID", choices = c(1:352))
+    # }
+    # else if (length(rvs$coombe > 0)){
+    #     # If there is sample plan
+    #     updateSelectInput(session, "Vine_ID", as.list(coombe$Vine_ID))
+    # }
+    # else if (input$sampling_plan_file) {
+    #     updateSelectInput(session, "Vine_ID", as.list(sampling_plan_file$Vine_ID))
+    # }
+    
+    #)
     
     observeEvent(input$submit_data, {
-        rvs$coombe_sampled  <- rbind(rvs$coombe_sampled, 
-                                     data.frame(Vine_ID = input$Vine_ID, 
-                                 cane_count = input$cane, 
-                                 trunk_circumference = input$trunk,
-                                 cane_diameter = input$diameter,
-                                 internode_length = input$internode)
-        
+        rvs$coombe_sampled  <- rbind(
+            rvs$coombe_sampled,
+            data.frame(
+                Vine_ID = input$Vine_ID,
+                cane_count = input$cane,
+                trunk_circumference = input$trunk,
+                cane_diameter = input$diameter,
+                internode_length = input$internode
+            )
+            
         )
-    }
-    )
+    })
     
-    print(rvs)
+    #print(rvs)
     # Merge at download button
     output$downloadData <- downloadHandler(
-        filename = function() { "sampling_data.csv" },
+        filename = function() {
+            "sampling_data.csv"
+        },
         content = function(file) {
-            sampling_csv <- merge(coombe(), rvs$coombe_sampled, by = "Vine_ID", all.x = TRUE)
-            write.csv( x = sampling_csv, file, row.names = FALSE)
+            sampling_csv <-
+                merge(rvs$coombe,
+                      rvs$coombe_sampled,
+                      by = "Vine_ID",
+                      all.x = TRUE)
+            write.csv(x = sampling_csv, file, row.names = FALSE)
         }
     )
-   
+    
     
     output$sampled_coombe <- rhandsontable::renderRHandsontable({
-         rhandsontable::rhandsontable(rvs$coombe_sampled, stretchH = "all") %>% 
-             hot_cols(columnSorting = T) 
+        rhandsontable::rhandsontable(rvs$coombe_sampled, stretchH = "all") %>%
+            hot_cols(columnSorting = T)
     })
     
     observeEvent(input$sampled_coombe, {
         rvs$coombe_sampled <- hot_to_r(input$sampled_coombe)
     })
+    
+    #3. Analysis and Plot
+    #Use user data input to analyse
+    userFile <- reactive({
+        # If no file is selected, don't do anything
+        validate(need(input$sampling_plan_file, message = FALSE))
+        input$sampling_plan_file
+    })
+    # The user's data, parsed into a data frame
+    
+    #User data input for analysis
+    observeEvent( input$submit_data1  ,{
+        inFile <- reactive({input$analysis_file})
+        #inputId = "file"
+        data1 <- read.csv(inFile()$datapath,
+                         header = F,
+                         # quote = input$quote,
+                         #sep = input$sep,
+                         #stringsAsFactors = stringsAsFactors
+        )
+        print(data1)
+    })
+    
+    #Create a Box plot
     
 }
 
