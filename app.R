@@ -5,11 +5,11 @@ library(shinydashboard)
 library(readxl)
 library(sampling)
 library(ggplot2)
-library(Cairo)
+library(ragg)
 library(dplyr)
 library(rhandsontable)
 
-options(shiny.usecairo = T)
+options(shiny.useragg = TRUE)
 
 Coombe_map <- read_excel("Coombe_map.xlsx")
 
@@ -364,6 +364,7 @@ server <- function(input, output, session) {
             
             return(rvs$coombe)
         })
+    
     #Use user data input to analyse
     userFile <- reactive({
         # If no file is selected, don't do anything
@@ -371,19 +372,20 @@ server <- function(input, output, session) {
         input$sampling_plan_file
     })
     # The user's data, parsed into a data frame
-    observeEvent( input$submit_plan  ,{
+    observeEvent( input$submit_plan ,{
         File <- reactive({input$sampling_plan_file})
         #inputId = "file"
         data <- read.csv(userFile()$datapath,
-                         header = F,
+                         header = T
                          # quote = input$quote,
                          #sep = input$sep,
                          #stringsAsFactors = stringsAsFactors
                          )
-        print(data)
+        #print(head(data))
         rvs$coombe <- data
-        updateSelectInput(session, "Vine_ID", choices = rvs$coombe$Vine_ID[rvs$coombe$sample ==
-                                                                               1])
+        print(rvs$coombe$Vine_ID[rvs$coombe$sample == 1])
+        updateSelectInput(session, "Vine_ID", 
+                          choices = rvs$coombe$Vine_ID[rvs$coombe$sample == 1])
     })
     
     plotOutput <- reactive({
@@ -394,12 +396,12 @@ server <- function(input, output, session) {
                 y = Column,
                 color = Rootstock
             )) + geom_point(size = 3)  +
-            ggtitle("Map of Coombe Vineyard") + labs(color = 'Rootstock') +
+            labs(color = 'Rootstock', title = "Map of Coombe Vineyard") +
             scale_shape_manual(values = c(16, 15)) + guides(size = FALSE,
                                                             alpha = FALSE,
                                                             shape = FALSE) +
             theme_bw() + theme(plot.title = element_text(size = 16, hjust = 0.5),
-                               legend.position = "top")
+                               legend.position = "top", text=element_text(size=18))
         
         if ("sample" %in% colnames(rvs$coombe)) {
             p <- p +
@@ -460,9 +462,9 @@ server <- function(input, output, session) {
     )
     #2. Data entry
     # Upload CSV file of the sampling plan
-    eventReactive(input$sampling_plan_file,
-                  sampling_csv <-
-                      read.csv(input$sampling_plan_file))
+    # eventReactive(input$sampling_plan_file,
+    #               sampling_csv <-
+    #                   read.csv(input$sampling_plan_file))
     
     
     #Update select input depending on the sampling plan's Vine ID
@@ -521,8 +523,10 @@ server <- function(input, output, session) {
     
     
     output$sampled_coombe <- rhandsontable::renderRHandsontable({
-        rhandsontable::rhandsontable(rvs$coombe_sampled, stretchH = "all") %>%
+        if(!is.null(rvs$coombe_sampled)) {
+            rhandsontable::rhandsontable(rvs$coombe_sampled, stretchH = "all") %>%
             hot_cols(columnSorting = T)
+        }
     })
     
     observeEvent(input$sampled_coombe, {
@@ -531,25 +535,27 @@ server <- function(input, output, session) {
     
     #3. Analysis and Plot
     #Use user data input to analyse
-    userFile <- reactive({
-        # If no file is selected, don't do anything
-        validate(need(input$sampling_plan_file, message = FALSE))
-        input$sampling_plan_file
-    })
+    # userFile <- reactive({
+    #     # If no file is selected, don't do anything
+    #     validate(need(input$sampling_plan_file, message = FALSE))
+    #     input$sampling_plan_file
+    #     print(input)
+    # })
     # The user's data, parsed into a data frame
     
     #User data input for analysis
-    observeEvent( input$submit_data1  ,{
-        inFile <- reactive({input$analysis_file})
-        #inputId = "file"
-        data1 <- read.csv(inFile()$datapath,
-                         header = F,
-                         # quote = input$quote,
-                         #sep = input$sep,
-                         #stringsAsFactors = stringsAsFactors
-        )
-        print(data1)
-    })
+    # observeEvent(input$submit_data1  ,{
+    #     inFile <- reactive({input$analysis_file})
+    #     print(inFile())
+    #     #inputId = "file"
+    #     data1 <- read.csv(inFile()$datapath,
+    #                      #header = T#,
+    #                      # quote = input$quote,
+    #                      #sep = input$sep,
+    #                      #stringsAsFactors = stringsAsFactors
+    #     )
+    #     # print(head(data1))
+    # })
     
     #Create a Box plot
     
