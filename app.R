@@ -39,8 +39,16 @@ ui <- dashboardPage(
                             downloadButton('downloadMap', 'Download Map')
                         ),
                         
-                        box(
-                            title = "Sampling plan",
+                        box(title = "Sampling plan",
+                            column(1,
+                                  dropdownButton(
+                                      tags$h3("Sampling Plan help"),
+                                      helpText("The sampling plan is adjustable by choosing types of sampling, other variables and number of samples via dropdown boxes and sliders. Click “Generate Plan” after you have adjusted the parameters."),
+                                      circle = TRUE, status = "danger",
+                                      icon = icon("question"), width = "200px", size = "xs", right = T,
+                                      tooltip = tooltipOptions(title = "Click for help!")
+                                  )
+                            ),
                             selectInput(
                                 "select",
                                 label = h3("Type of Sampling"),
@@ -108,6 +116,16 @@ ui <- dashboardPage(
                             #Set seed value
                             p("The session's seed value is"),
                             textOutput("random_seed"),
+                            column(1,
+                                   dropdownButton(
+                                       tags$h3("Seed value help"),
+                                       helpText("A random seed is a starting point in generating random numbers. A random seed was generated at each new session or you can customize it here to reproduce a previous session."),
+                                       circle = TRUE, status = "danger",
+                                       icon = icon("question"), width = "300px", size = "xs", right = T,
+                                       tooltip = tooltipOptions(title = "Click for help!")
+                                   )
+                            ),
+                            
                             numericInput(
                                 "customize_seed",
                                 "Or Customize seed value here:",
@@ -125,6 +143,15 @@ ui <- dashboardPage(
                     fluidRow(
                         box(
                             width = 12,
+                            column(1,
+                                   dropdownButton(
+                                       tags$h3("Download plan help"),
+                                       helpText("Download the Sampling Plan to upload and use for the Data entry step."),
+                                       circle = TRUE, status = "danger",
+                                       icon = icon("question"), width = "300px", size = "xs", right = T,
+                                       tooltip = tooltipOptions(title = "Click for help!")
+                                   )
+                            ),
                             downloadButton('downloadPlan', 'Download Sampling Plan'),
                             # Add table here to display samples chosen
                             DT::dataTableOutput("plan")
